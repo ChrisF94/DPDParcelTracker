@@ -8,8 +8,8 @@ app.use(cors());
 
 const connection = mysql.createConnection({
     host: 'localhost',
-    user: 'USERNAME',
-    password: 'PASSWORD',
+    user: 'root',
+    password: '',
     database: 'parcelTracker'
 });
 
