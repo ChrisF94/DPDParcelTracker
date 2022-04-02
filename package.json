@@ -4,7 +4,7 @@
   "description": "get delivery status",
   "main": "main.js",
   "scripts": {
-    "start": "nodemon index.js"
+    "start": "nodemon main.js"
   },
   "author": "",
   "license": "ISC",
