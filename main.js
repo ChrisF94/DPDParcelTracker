@@ -36,7 +36,7 @@ function getTrackingStatus(parcelNumber) {
 }
 
 function getTrackingNumbers() {
-    connection.query('SELECT parcelNumber FROM parcels WHERE delivered = "No"', (err, rows) => {
+    connection.query('SELECT parcelNumber FROM parcels WHERE delivered = ""', (err, rows) => {
         if (err) throw err;
         for (let index = 0; index < rows.length; index++) {
             const parcelNumber = rows[index].parcelNumber;
