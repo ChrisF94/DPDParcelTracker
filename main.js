@@ -43,13 +43,14 @@ function executeStatement() {
             console.log(err);
         }
     });
+
     var result = "";
     var loop = 1;
     request.on('row', function (row) {
         var ParcelNumber = row[0].value;
         setTimeout(() => {
             getTrackingStatus(ParcelNumber);
-        }, loop * 3000); //Amount of seconds to loop
+        }, loop * 500); //Amount of seconds to loop
 
         loop++;
     });
