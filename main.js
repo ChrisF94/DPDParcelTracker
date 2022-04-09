@@ -6,81 +6,77 @@ const sql = require('mssql');
 const app = express();
 app.use(cors());
 
-const config = {
-    server: "localhost\\SQLEXPRESS",
-    port: 1443,
-    user: "root",
-    password: "",
-    database: "DPD",
-    options:{
-        enableArithAbort: true
+var Connection = require('tedious').Connection;
+var config = {
+    server: 'localhost',
+    authentication: {
+        type: 'default',
+        options: {
+            userName: '', //DB Username
+            password: '' //DB Password
+        }
     },
-    connectionTimeout: 30000,
-    pool:{
-        max:10,
-        min:0,
-        idleTimeoutMillis: 30000
+    options: {
+        trustServerCertificate: true,
+        database: '', //DB
+        instanceName: 'LOCALHOST'
     }
 }
-
-sql.on('error', err => {
-    console.log(err);
+var connection = new Connection(config);
+connection.on('connect', function (err) {
+    if (err) {
+        console.log(err);
+    } else {
+        console.log('Connected');
+        executeStatement();
+    }
 });
 
+connection.connect();
 
-function getTrackingStatus(parcelNumber) {
-    axios.get('https://apis.track.dpd.co.uk/v1/reference?referenceNumber=' + parcelNumber)
+var Request = require('tedious').Request;
+var TYPES = require('tedious').TYPES;
+
+function executeStatement() {
+    request = new Request("SELECT parcelNumber FROM parcels WHERE delivered ='No'", function (err) {  //Replace parcelNumber with your table name
+        if (err) {
+            console.log(err);
+        }
+    });
+    var result = "";
+    var loop = 1;
+    request.on('row', function (row) {
+        var ParcelNumber = row[0].value;
+        setTimeout(() => {
+            getTrackingStatus(ParcelNumber);
+        }, loop * 3000); //Amount of seconds to loop
+
+        loop++;
+    });
+    connection.execSql(request);
+}
+function getTrackingStatus(ParcelNumber) {
+    axios.get('https://apis.track.dpd.co.uk/v1/reference?referenceNumber=' + ParcelNumber)
         .then(async response => {
             const theData = response.data.data[0].parcelStatus;
-
             if (theData.includes('delivered')) {
                 var delivered = 'Yes';
             } else {
                 var delivered = 'No';
             }
-
             try {
                 let pool = await sql.connect(config);
-                await pool.request().query(`UPDATE parcels SET delivered = '${delivered}' WHERE parcelNumber = '${parcelNumber}'`);
+                await pool.request().query(`UPDATE parcels SET delivered = '${delivered}', parcelStatus = '${theData}' WHERE parcelNumber = '${ParcelNumber}'`);
+                console.log(delivered);
                 sql.close();
             } catch (err) {
                 console.log(err);
                 sql.close();
             }
-            
-
-           
         }).catch(error => {
             console.log(error);
         });
 }
-
-async function getTrackingNumbers() {
-    try {
-        let pool = await sql.connect(config);
-        await pool.request().query(`SELECT parcelNumber FROM parcels WHERE delivered = ""`), (err, result) => {
-            if (err) {
-                console.log(err);
-            } else {
-                for (var i = 0; i < result.recordset.length; i++) {
-                    setTimeout(() => {
-                        console.log(parcelNumber);
-                        getTrackingStatus(result.recordset[i].parcelNumber);
-                    }, index * 1000);
-                }
-            }
-        }
-        sql.close();
-    } catch (err) {
-        console.log(err);
-        sql.close();
-    }
-
-    return "DPD API call complete";
-}
-
 app.get('/', (req, res) => {
-    res.json(getTrackingNumbers());
+    res.json();
 });
-
-app.listen(PORT, () => console.log(`server running on PORT ${PORT}`))
